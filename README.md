@@ -1,0 +1,2 @@
+# GD32207C-EVAL-board-DMX512-RDM
+GD32207C-EVAL-board DMX512 RDM Art-Net sACN E1.31 Pixel Ethernet

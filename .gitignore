@@ -30,3 +30,33 @@
 *.exe
 *.out
 *.app
+
+# Linux 
+.nfs*
+.nfs.*
+
+# Apple
+.DS*
+._.DS*
+._*
+._*.*
+
+# Eclipse
+.tracecompass
+*/.tracecompass
+
+# Build
+*/build_gd32/*
+*/lib_gd32/*
+*.su
+*.list
+
+*.bin
+udp_send
+
+gd32f10x*.*
+lib-gd32/gd32f10x/*
+gd32f30x*.*
+lib-gd32/gd32f30x/*
+gd32f4xx*.*
+lib-gd32/gd32f4xx/*

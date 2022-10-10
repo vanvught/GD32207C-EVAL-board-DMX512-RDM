@@ -5,8 +5,16 @@ else
 	LIBS+=remoteconfig
 endif
 
+ifeq ($(findstring NODE_NODE,$(DEFINES)),NODE_NODE)
+	LIBS+=node artnet e131
+endif	
+
 ifeq ($(findstring NODE_ARTNET,$(DEFINES)),NODE_ARTNET)
 	LIBS+=artnet4 artnet e131
+	ifeq ($(findstring ARTNET_VERSION=3,$(DEFINES)),ARTNET_VERSION=3)
+	else
+		DEFINES+=NODE_E131
+	endif
 endif
 
 ifeq ($(findstring NODE_E131,$(DEFINES)),NODE_E131)
@@ -36,6 +44,10 @@ endif
 
 ifeq ($(findstring NODE_DDP_DISPLAY,$(DEFINES)),NODE_DDP_DISPLAY)
 	LIBS+=ddp
+endif
+
+ifeq ($(findstring NODE_PP,$(DEFINES)),NODE_PP)
+	LIBS+=pp
 endif
 
 RDM=
@@ -119,6 +131,10 @@ ifeq ($(findstring OUTPUT_DDP_PIXEL,$(DEFINES)),OUTPUT_DDP_PIXEL)
 	LIBS+=ws28xx
 endif
 
+ifeq ($(findstring OUTPUT_DMX_STEPPER,$(DEFINES)),OUTPUT_DMX_STEPPER)
+	LIBS+=l6470dmx l6470
+endif
+
 ifeq ($(findstring OUTPUT_DMX_TLC59711,$(DEFINES)),OUTPUT_DMX_TLC59711)
 	LIBS+=tlc59711dmx tlc59711
 endif
@@ -139,7 +155,7 @@ endif
 
 ifeq ($(findstring NO_EMAC,$(DEFINES)),NO_EMAC)
 else
-	LIBS+=network properties
+	LIBS+=network
 endif
 
 ifeq ($(findstring DISPLAY_UDF,$(DEFINES)),DISPLAY_UDF)
@@ -150,10 +166,6 @@ ifneq ($(findstring network,$(LIBS)),network)
 	LIBS+=network
 endif
 
-ifneq ($(findstring properties,$(LIBS)),properties)
-	LIBS+=properties
-endif
-
-LIBS+=lightset display hal
+LIBS+=properties lightset display hal
 
 $(info $$LIBS [${LIBS}])

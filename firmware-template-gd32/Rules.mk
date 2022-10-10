@@ -16,7 +16,7 @@ $(info $$FAMILY [${FAMILY}])
 $(info $$FAMILY_UC [${FAMILY_UC}])
 
 # Output 
-TARGET=$(FAMILY).bin
+TARGET=gd32f207.bin
 LIST=$(FAMILY).list
 MAP=$(FAMILY).map
 BUILD=build_gd32/

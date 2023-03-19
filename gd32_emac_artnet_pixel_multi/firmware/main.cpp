@@ -24,11 +24,11 @@
  */
 
 #include <cstdint>
+#include <cassert>
 
 #include "hardware.h"
 #include "network.h"
 #include "networkconst.h"
-#include "ledblink.h"
 
 #include "mdns.h"
 #include "mdnsservices.h"
@@ -78,6 +78,8 @@
 #include "firmwareversion.h"
 #include "software_version.h"
 
+static constexpr auto DMXPORT_OFFSET = 64U;
+
 void Hardware::RebootHandler() {
 	WS28xxMulti::Get()->Blackout();
 	ArtNet4Node::Get()->Stop();
@@ -86,16 +88,12 @@ void Hardware::RebootHandler() {
 void main() {
 	Hardware hw;
 	Network nw;
-	LedBlink lb;
 	DisplayUdf display;
 	FirmwareVersion fw(SOFTWARE_VERSION, __DATE__, __TIME__);
 
 	ConfigStore configStore;
 
-	fw.Print("\x1b[32m" "Art-Net 4 Pixel controller {8x 4 Universes}" "\x1b[37m");
-
-	hw.SetLed(hardware::LedStatus::ON);
-	lb.SetLedBlinkDisplay(new DisplayHandler);
+	fw.Print("Art-Net 4 Pixel controller {8x 4 Universes}");
 
 	display.TextStatus(NetworkConst::MSG_NETWORK_INIT, Display7SegmentMessage::INFO_NETWORK_INIT, CONSOLE_YELLOW);
 
@@ -115,22 +113,21 @@ void main() {
 
 #if defined (ENABLE_HTTPD)
 	HttpDaemon httpDaemon;
-	httpDaemon.Start();
 #endif
 
 	display.TextStatus(ArtNetMsgConst::PARAMS, Display7SegmentMessage::INFO_NODE_PARMAMS, CONSOLE_YELLOW);
 
 	ArtNet4Node node;
 
-	StoreArtNet storeArtNet;
+	StoreArtNet storeArtNet(DMXPORT_OFFSET);
+	node.SetArtNetStore(&storeArtNet);
+
 	ArtNetParams artnetParams(&storeArtNet);
 
 	if (artnetParams.Load()) {
 		artnetParams.Dump();
-		artnetParams.Set();
+		artnetParams.Set(DMXPORT_OFFSET);
 	}
-
-	node.SetArtNetStore(&storeArtNet);
 
 	PixelDmxConfiguration pixelDmxConfiguration;
 
@@ -145,27 +142,42 @@ void main() {
 	WS28xxDmxMulti pixelDmxMulti(pixelDmxConfiguration);
 	pixelDmxMulti.SetPixelDmxHandler(new PixelDmxStartStop);
 
-	const auto nActivePorts = pixelDmxMulti.GetOutputPorts();
+	const auto nPixelActivePorts = pixelDmxMulti.GetOutputPorts();
 	const auto nUniverses = pixelDmxMulti.GetUniverses();
 
 	uint32_t nPortProtocolIndex = 0;
 
-	for (uint32_t nOutportIndex = 0; nOutportIndex < nActivePorts; nOutportIndex++) {
-		auto isSet = false;
-		const auto nStartUniversePort = pixelDmxParams.GetStartUniversePort(nOutportIndex, isSet);
-		if (isSet) {
-			for (uint16_t u = 0; u < nUniverses; u++) {
-				node.SetUniverse(nPortProtocolIndex, lightset::PortDir::OUTPUT, static_cast<uint16_t>(nStartUniversePort + u));
+	if (artnetnode::PAGE_SIZE==4) {
+		for (uint32_t nOutportIndex = 0; nOutportIndex < nPixelActivePorts; nOutportIndex++) {
+			auto isSet = false;
+			const auto nStartUniversePort = pixelDmxParams.GetStartUniversePort(nOutportIndex, isSet);
+			if (isSet) {
+				for (uint16_t u = 0; u < nUniverses; u++) {
+					node.SetUniverse(nPortProtocolIndex, lightset::PortDir::OUTPUT, static_cast<uint16_t>(nStartUniversePort + u));
+					nPortProtocolIndex++;
+				}
+				nPortProtocolIndex = nPortProtocolIndex + artnet::PORTS - nUniverses;
+			} else {
+				nPortProtocolIndex = nPortProtocolIndex + artnet::PORTS;
+			}
+		}
+	} else {
+		assert(artnetnode::PAGE_SIZE==1);
+
+		for (uint32_t nOutportIndex = 0; nOutportIndex < nPixelActivePorts; nOutportIndex++) {
+			auto isSet = false;
+			const auto nStartUniversePort = pixelDmxParams.GetStartUniversePort(nOutportIndex, isSet);
+			for (uint32_t u = 0; u < nUniverses; u++) {
+				if (isSet) {
+					node.SetUniverse(nPortProtocolIndex, lightset::PortDir::OUTPUT, static_cast<uint16_t>(nStartUniversePort + u));
+				}
 				nPortProtocolIndex++;
 			}
-			nPortProtocolIndex = nPortProtocolIndex + static_cast<uint8_t>(artnet::PORTS - nUniverses);
-		} else {
-			nPortProtocolIndex = nPortProtocolIndex + artnet::PORTS;
 		}
 	}
 
 	const auto nTestPattern = static_cast<pixelpatterns::Pattern>(pixelDmxParams.GetTestPattern());
-	PixelTestPattern pixelTestPattern(nTestPattern, nActivePorts);
+	PixelTestPattern pixelTestPattern(nTestPattern, nPixelActivePorts);
 	
 	if (PixelTestPattern::GetPattern() != pixelpatterns::Pattern::NONE) {
 		node.SetOutput(nullptr);
@@ -178,7 +190,7 @@ void main() {
 #if defined (NODE_RDMNET_LLRP_ONLY)
 	display.TextStatus(RDMNetConst::MSG_CONFIG, Display7SegmentMessage::INFO_RDMNET_CONFIG, CONSOLE_YELLOW);
 	char aDescription[rdm::personality::DESCRIPTION_MAX_LENGTH + 1];
-	snprintf(aDescription, sizeof(aDescription) - 1, "Art-Net Pixel %d-%s:%d", nActivePorts, PixelType::GetType(WS28xxMulti::Get()->GetType()), WS28xxMulti::Get()->GetCount());
+	snprintf(aDescription, sizeof(aDescription) - 1, "Art-Net 4 Pixel %d-%s:%d", nPixelActivePorts, PixelType::GetType(WS28xxMulti::Get()->GetType()), WS28xxMulti::Get()->GetCount());
 
 	char aLabel[RDM_DEVICE_LABEL_MAX_LENGTH + 1];
 	const auto nLength = snprintf(aLabel, sizeof(aLabel) - 1, GD32_BOARD_NAME " Pixel");
@@ -198,8 +210,8 @@ void main() {
 	RDMDeviceParams rdmDeviceParams(&storeRdmDevice);
 
 	if (rdmDeviceParams.Load()) {
-		rdmDeviceParams.Set(&llrpOnlyDevice);
 		rdmDeviceParams.Dump();
+		rdmDeviceParams.Set(&llrpOnlyDevice);
 	}
 
 	llrpOnlyDevice.SetRDMDeviceStore(&storeRdmDevice);
@@ -209,11 +221,11 @@ void main() {
 	node.Print();
 	pixelDmxMulti.Print();
 
-	display.SetTitle("ArtNet Pixel %dx%d", nActivePorts, WS28xxMulti::Get()->GetCount());
+	display.SetTitle("ArtNet 4 Pixel %dx%d", nPixelActivePorts, WS28xxMulti::Get()->GetCount());
 	display.Set(2, displayudf::Labels::IP);
 	display.Set(3, displayudf::Labels::NODE_NAME);
 	display.Set(4, displayudf::Labels::VERSION);
-	display.Set(5, displayudf::Labels::UNIVERSE);
+	display.Set(5, displayudf::Labels::UNIVERSE_PORT_A);
 	display.Set(6, displayudf::Labels::BOARDNAME);
 	display.Printf(7, "%s:%d G%d %s",
 		PixelType::GetType(pixelDmxConfiguration.GetType()),
@@ -225,11 +237,11 @@ void main() {
 	DisplayUdfParams displayUdfParams(&storeDisplayUdf);
 
 	if (displayUdfParams.Load()) {
-		displayUdfParams.Set(&display);
 		displayUdfParams.Dump();
+		displayUdfParams.Set(&display);
 	}
 
-	display.Show(&node);
+	display.Show(&node, DMXPORT_OFFSET);
 
 	if (nTestPattern != pixelpatterns::Pattern::NONE) {
 		display.ClearLine(6);
@@ -248,14 +260,6 @@ void main() {
 
 	while (configStore.Flash())
 		;
-
-#if defined (NODE_RDMNET_LLRP_ONLY)
-	display.TextStatus(RDMNetConst::MSG_START, Display7SegmentMessage::INFO_RDMNET_START, CONSOLE_YELLOW);
-
-	llrpOnlyDevice.Start();
-
-	display.TextStatus(RDMNetConst::MSG_STARTED, Display7SegmentMessage::INFO_RDMNET_STARTED, CONSOLE_GREEN);
-#endif
 
 	display.TextStatus(ArtNetMsgConst::START, Display7SegmentMessage::INFO_NODE_START, CONSOLE_YELLOW);
 
@@ -282,6 +286,6 @@ void main() {
 		httpDaemon.Run();
 #endif
 		display.Run();
-		lb.Run();
+		hw.Run();
 	}
 }

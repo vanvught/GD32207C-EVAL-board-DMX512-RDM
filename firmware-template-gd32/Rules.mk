@@ -1,3 +1,5 @@
+$(info "Rules.mk")
+
 PREFIX ?= arm-none-eabi-
 
 CC	 = $(PREFIX)gcc
@@ -6,14 +8,8 @@ AS	 = $(CC)
 LD	 = $(PREFIX)ld
 AR	 = $(PREFIX)ar
 
-FAMILY?=gd32f20x
 BOARD?=BOARD_GD32F207C_EVAL
-
-FAMILY:=$(shell echo $(FAMILY) | tr A-Z a-z)
-FAMILY_UC=$(shell echo $(FAMILY) | tr a-w A-W)
-
-$(info $$FAMILY [${FAMILY}])
-$(info $$FAMILY_UC [${FAMILY_UC}])
+ENET_PHY?=DP83848
 
 # Output 
 TARGET=gd32f207.bin
@@ -24,16 +20,22 @@ BUILD=build_gd32/
 # Input
 SOURCE=./
 FIRMWARE_DIR=./../firmware-template-gd32/
-LINKER=$(FIRMWARE_DIR)gd32f207vc_flash.ld
 
+DEFINES:=$(addprefix -D,$(DEFINES))
+DEFINES+=-DCONFIG_STORE_USE_ROM
+
+ifeq ($(findstring ARTNET_VERSION=4,$(DEFINES)),ARTNET_VERSION=4)
+	ifeq ($(findstring ARTNET_HAVE_DMXIN,$(DEFINES)),ARTNET_HAVE_DMXIN)
+		DEFINES+=-DE131_HAVE_DMXIN
+	endif
+endif
+
+MCU=GD32F207VC
+
+include ../firmware-template-gd32/Mcu.mk
 include ../firmware-template/libs.mk
 
 LIBS+=c++ c gd32
-
-$(info [${LIBS}])
-	
-DEFINES:=$(addprefix -D,$(DEFINES))
-DEFINES+=-DCONFIG_STORE_USE_ROM
 
 include ../firmware-template-gd32/Includes.mk
 
@@ -51,15 +53,17 @@ LDLIBS:=$(addprefix -l,$(LIBS))
 # The variables for the dependency check 
 LIBDEP=$(addprefix ../lib-,$(LIBS))
 
+$(info $$BOARD [${BOARD}])
+$(info $$ENET_PHY [${ENET_PHY}])
+$(info $$DEFINES [${DEFINES}])
+$(info $$LIBS [${LIBS}])
 $(info $$LIBDEP [${LIBDEP}])
 
-COPS=-DBARE_METAL -DGD32 -DGD32F20X_CL -D$(BOARD)
-COPS+=$(DEFINES) $(MAKE_FLAGS) $(INCLUDES)
-COPS+=$(LIBINCDIRS)
+COPS=-DBARE_METAL -DGD32 -DGD32F20X_CL -D$(MCU) -D$(BOARD) -DPHY_TYPE=$(ENET_PHY)
+COPS+=$(DEFINES) $(MAKE_FLAGS) $(INCLUDES) $(LIBINCDIRS)
 COPS+=-Os -mcpu=cortex-m3 -mthumb
 COPS+=-nostartfiles -ffreestanding -nostdlib
 COPS+=-fstack-usage
-COPS+=-Wstack-usage=10240
 COPS+=-ffunction-sections -fdata-sections
 
 CPPOPS=-std=c++11 
@@ -119,7 +123,9 @@ lisdep: $(LIBDEP)
 $(LIBDEP):
 	$(MAKE) -f Makefile.GD32 $(MAKECMDGOALS) 'MAKE_FLAGS=$(DEFINES)' -C $@ 
 
+#
 # Build bin
+#
 
 $(BUILD_DIRS) :
 	mkdir -p $(BUILD_DIRS)
@@ -133,6 +139,6 @@ $(BUILD)main.elf: Makefile.GD32 $(LINKER) $(BUILD)startup_$(FAMILY)_cl.o $(OBJEC
 	$(PREFIX)size -A -x $(BUILD)main.elf
 
 $(TARGET) : $(BUILD)main.elf 
-	$(PREFIX)objcopy $(BUILD)main.elf -O binary $(TARGET)	
+	$(PREFIX)objcopy $(BUILD)main.elf -O binary $(TARGET) --remove-section=.sram1* --remove-section=.sram2*
 	
 $(foreach bdir,$(SRCDIR),$(eval $(call compile-objects,$(bdir))))

@@ -7,7 +7,9 @@ LD	= $(PREFIX)ld
 AR	= $(PREFIX)ar
 
 FAMILY?=gd32f20x
+MCU?=GD32F207VC
 BOARD?=BOARD_GD32F207C_EVAL
+ENET_PHY?=DP83848
 
 FAMILY:=$(shell echo $(FAMILY) | tr A-Z a-z)
 FAMILY_UC=$(shell echo $(FAMILY) | tr a-w A-W)
@@ -23,12 +25,17 @@ DEFINES:=$(addprefix -D,$(DEFINES))
 DEFINES+=-D_TIME_STAMP_YEAR_=$(shell date  +"%Y") -D_TIME_STAMP_MONTH_=$(shell date  +"%-m") -D_TIME_STAMP_DAY_=$(shell date  +"%-d")
 DEFINES+=-DCONFIG_STORE_USE_ROM
 
-COPS=-DBARE_METAL -DGD32 -DGD32F20X_CL -D$(BOARD)
+ifeq ($(findstring ARTNET_VERSION=4,$(DEFINES)),ARTNET_VERSION=4)
+	ifeq ($(findstring ARTNET_HAVE_DMXIN,$(DEFINES)),ARTNET_HAVE_DMXIN)
+		DEFINES+=-DE131_HAVE_DMXIN
+	endif
+endif
+
+COPS=-DBARE_METAL -DGD32 -DGD32F20X_CL -D$(MCU) -D$(BOARD) -DPHY_TYPE=$(ENET_PHY)
 COPS+=$(DEFINES) $(MAKE_FLAGS) $(INCLUDES)
 COPS+=-Os -mcpu=cortex-m3 -mthumb
 COPS+=-nostartfiles -ffreestanding -nostdlib
 COPS+=-fstack-usage
-COPS+=-Wstack-usage=4096
 COPS+=-ffunction-sections -fdata-sections
 
 CPPOPS=-std=c++11 

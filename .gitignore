@@ -50,6 +50,8 @@
 */lib_gd32/*
 *.su
 *.list
+*.map
+*.size
 
 *.bin
 udp_send
@@ -60,3 +62,4 @@ gd32f30x*.*
 lib-gd32/gd32f30x/*
 gd32f4xx*.*
 lib-gd32/gd32f4xx/*
+

@@ -1,7 +1,9 @@
 MEMORY
 {
-  FLASH (rx)      : ORIGIN = 0x08007000, LENGTH = 106K
-  RAM (xrw)       : ORIGIN = 0x20000000, LENGTH = 128K
+  FLASH (rx)      : ORIGIN = 0x08008000, LENGTH = 106K
+  RAM (xrw)       : ORIGIN = 0x20000000, LENGTH = 112K
+  RAM1 (xrw)      : ORIGIN = 0x2001C000, LENGTH = 16K
+  RAM2 (xrw)      : ORIGIN = 0x20020000, LENGTH = 0K
 }
 
 ENTRY(Reset_Handler)
@@ -23,19 +25,34 @@ SECTIONS
   .text :
   {
     . = ALIGN(4);
-  *(.text.unlikely*)
-  *(.text.hot*)
+	*(.text.unlikely*)
+	*(.text.hot*)
 	*(.text)
 	*(.text*)
 	*(.glue_7)
 	*(.glue_7t)
 	*(.eh_frame)
-
     KEEP (*(.init))
     KEEP (*(.fini))
-
     . = ALIGN(4);
     _etext = .;
+    
+    . = ALIGN(8);
+     
+    PROVIDE_HIDDEN (__preinit_array_start = .);
+    KEEP (*(.preinit_array*))
+    PROVIDE_HIDDEN (__preinit_array_end = .);
+
+    PROVIDE_HIDDEN (__init_array_start = .);
+    KEEP (*(SORT(.init_array.*)))
+    KEEP (*(.init_array*))
+    PROVIDE_HIDDEN (__init_array_end = .);
+
+    PROVIDE_HIDDEN (__fini_array_start = .);
+    KEEP (*(.fini_array*))
+    KEEP (*(SORT(.fini_array.*)))
+    PROVIDE_HIDDEN (__fini_array_end = .);
+    
   } >FLASH
 
   .rodata :
@@ -46,42 +63,15 @@ SECTIONS
     . = ALIGN(4);
   } >FLASH
 
-   .ARM.extab :
-  { 
-     *(.ARM.extab* .gnu.linkonce.armextab.*) 
-  } >FLASH
+  .stack :
+  {
+    . = ALIGN(4);
+    PROVIDE( stack_low = . ); 
+    . = __stack_size;  
+    PROVIDE( _sp = . ); 
+    . = ALIGN(4);
+  } >RAM
   
-    .ARM : {
-    __exidx_start = .;
-    *(.ARM.exidx*)
-    __exidx_end = .;
-    } >FLASH
-
-  .ARM.attributes : { *(.ARM.attributes) } > FLASH
-
-  .preinit_array :
-  {
-    PROVIDE_HIDDEN (__preinit_array_start = .);
-    KEEP (*(.preinit_array*))
-    PROVIDE_HIDDEN (__preinit_array_end = .);
-  } >FLASH
-
-  .init_array :
-  {
-    PROVIDE_HIDDEN (__init_array_start = .);
-    KEEP (*(SORT(.init_array.*)))
-    KEEP (*(.init_array*))
-    PROVIDE_HIDDEN (__init_array_end = .);
-  } >FLASH
-
-  .fini_array :
-  {
-    PROVIDE_HIDDEN (__fini_array_start = .);
-    KEEP (*(.fini_array*))
-    KEEP (*(SORT(.fini_array.*)))
-    PROVIDE_HIDDEN (__fini_array_end = .);
-  } >FLASH
-
   _sidata = LOADADDR(.data);
   .data :
   {
@@ -110,31 +100,38 @@ SECTIONS
   PROVIDE ( end = _ebss );
   PROVIDE ( _end = _ebss );
   
-  .heap ORIGIN(RAM) + LENGTH(RAM) - __stack_size - __heap_size :
+  .heap :
   {
     . = ALIGN(4);
     heap_low = .;
     . = . + __heap_size;
     heap_top = .;
     . = ALIGN(4);
-  } >RAM AT>RAM
-
-  .stack ORIGIN(RAM) + LENGTH(RAM) - __stack_size :
+  } >RAM
+  
+  .sram1 :
   {
+  	. = ALIGN(4);
+    *(.sram1)
+    *(.sram1*)
 	. = ALIGN(4);
-    PROVIDE( _heap_end = . ); 
-    . = __stack_size;  
-    PROVIDE( _sp = . ); 
-    . = ALIGN(4);
-  } >RAM AT>RAM
+    _sdmx = .;
+    *(.dmx)
+	. = ALIGN(4);
+    _edmx = .;
+	. = ALIGN(4);
+	_spixel = .;
+    *(.pixel)
+	. = ALIGN(4);
+	_epixel = .;
+  } >RAM1 
 
   /DISCARD/ :
   {
-	*(*.ARM.attributes)
+	*(*.ARM.*)
 	*(*.comment)
 	*(*.debug*)
   }
 }
 
- /* input sections */
 GROUP(libgcc.a libc.a)

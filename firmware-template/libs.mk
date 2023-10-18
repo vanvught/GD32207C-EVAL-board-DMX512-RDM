@@ -1,41 +1,21 @@
 $(info $$DEFINES [${DEFINES}])
 
-LINUX=
-ifeq ($(detected_OS),Linux) 
-	LINUX=1
-else
-	ifeq ($(detected_OS),Darwin) 
-		LINUX=1
-	endif
-endif
-
 ifeq ($(findstring NO_EMAC,$(DEFINES)),NO_EMAC)
 else
 	LIBS+=remoteconfig
 endif
 
-ifeq ($(findstring NODE_NODE,$(DEFINES)),NODE_NODE)
-	LIBS+=node artnet dmxartnet e131 dmxe131
-endif	
-
 ifeq ($(findstring NODE_ARTNET,$(DEFINES)),NODE_ARTNET)
 	ifeq ($(findstring ARTNET_VERSION=3,$(DEFINES)),ARTNET_VERSION=3)
 		LIBS+=artnet
 	else
-		LIBS+=artnet4 artnet
-		DEFINES+=NODE_E131
-		ifeq ($(findstring ARTNET_HAVE_DMXIN,$(DEFINES)),ARTNET_HAVE_DMXIN)
-			LIBS+=dmxartnet
-		endif
+		LIBS+=artnet e131
 	endif
 endif
 
 ifeq ($(findstring NODE_E131,$(DEFINES)),NODE_E131)
 	ifneq ($(findstring e131,$(LIBS)),e131)
 		LIBS+=e131
-	endif
-	ifeq ($(findstring E131_HAVE_DMXIN,$(DEFINES)),E131_HAVE_DMXIN)
-		LIBS+=dmxe131
 	endif
 endif
 

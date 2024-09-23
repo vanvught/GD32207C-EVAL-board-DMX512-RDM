@@ -1,0 +1,18 @@
+DEFINES =NODE_OSC_CLIENT 
+
+DEFINES+=ENABLE_HTTPD ENABLE_CONTENT
+
+DEFINES+=CONFIG_MDNS_DOMAIN_REVERSE
+
+DEFINES+=DISABLE_RTC
+DEFINES+=DISABLE_FS
+
+DEFINES+=NDEBUG
+
+LIBS=
+
+SRCDIR=firmware lib device
+
+include ../firmware-template-gd32/Rules.mk
+
+prerequisites:

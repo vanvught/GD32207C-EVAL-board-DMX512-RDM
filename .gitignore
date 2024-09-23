@@ -63,3 +63,4 @@ lib-gd32/gd32f30x/*
 gd32f4xx*.*
 lib-gd32/gd32f4xx/*
 
+*.map

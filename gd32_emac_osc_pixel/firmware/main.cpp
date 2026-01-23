@@ -1,8 +1,7 @@
 /**
  * @file main.cpp
- *
  */
-/* Copyright (C) 2022-2024 by Arjan van Vught mailto:info@gd32-dmx.org
+/* Copyright (C) 2022-2025 by Arjan van Vught mailto:info@gd32-dmx.org
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,138 +22,94 @@
  * THE SOFTWARE.
  */
 
-#include <cstdint>
-
-#include "hardware.h"
-#include "network.h"
-#include "networkconst.h"
-
-#include "net/apps/mdns.h"
-
-#if defined (ENABLE_NTP_CLIENT)
-# include "net/apps/ntpclient.h"
-#endif
-
+#include "gd32/hal.h"
+#include "gd32/hal_watchdog.h"
+#include "hal_boardinfo.h"
 #include "display.h"
-#include "displayhandler.h"
-
+#include "emac/network.h"
 #include "oscserver.h"
-#include "oscserverparams.h"
+#include "json/oscserverparams.h"
 #include "oscservermsgconst.h"
-
-#include "pixeldmxconfiguration.h"
+#include "firmware/pixeldmx/show.h"
 #include "pixeltype.h"
 #include "pixeltestpattern.h"
-#include "pixeldmxparams.h"
-
-#include "ws28xxdmx.h"
-
+#include "pixeldmx.h"
+#include "json/pixeldmxparams.h"
 #include "handler.h"
-
 #include "remoteconfig.h"
-#include "remoteconfigparams.h"
-
 #include "configstore.h"
-
-
 #include "firmwareversion.h"
 #include "software_version.h"
+#include "common/utils/utils_flags.h"
+#include "configurationstore.h"
 
-void Hardware::RebootHandler() {
-	WS28xx::Get()->Blackout();
+namespace hal
+{
+void RebootHandler()
+{
+    PixelDmx::Get().Blackout();
 }
+} // namespace hal
 
-int main() {
-	Hardware hw;
-	Display display;
-	ConfigStore configStore;
-	display.TextStatus(NetworkConst::MSG_NETWORK_INIT, CONSOLE_YELLOW);
-	Network nw;
-	MDNS mDns;
-	display.TextStatus(NetworkConst::MSG_NETWORK_STARTED, CONSOLE_GREEN);
-	FirmwareVersion fw(SOFTWARE_VERSION, __DATE__, __TIME__);
+int main() // NOLINT
+{
+    hal::Init();
+    Display display;
+    ConfigStore config_store;
+    network::Init();
+    FirmwareVersion fw(SOFTWARE_VERSION, __DATE__, __TIME__);
 
-	fw.Print("OSC Server Pixel controller {1x Universe}");
-	
-	
-#if defined (ENABLE_NTP_CLIENT)
-	NtpClient ntpClient;
-	ntpClient.Start();
-	ntpClient.Print();
-#endif
+    fw.Print("OSC Server Pixel controller {1x Universe}");
 
-	OSCServerParams params;
-	OscServer server;
+    OscServer oscserver;
 
-	params.Load();
-	params.Set(&server);
+    json::OscServerParams oscserver_params;
+    oscserver_params.Load();
+    oscserver_params.Set();
 
-	mDns.ServiceRecordAdd(nullptr, mdns::Services::OSC, "type=server", server.GetPortIncoming());
+    display.TextStatus(OscServerMsgConst::PARAMS, console::Colours::kConsoleYellow);
 
-	display.TextStatus(OscServerMsgConst::PARAMS, CONSOLE_YELLOW);
+    PixelDmx pixeldmx;
 
-	PixelDmxConfiguration pixelDmxConfiguration;
+    json::PixelDmxParams pixeldmx_params;
+    pixeldmx_params.Load();
+    pixeldmx_params.Set();
 
-	PixelDmxParams pixelDmxParams;
-	pixelDmxParams.Load();
-	pixelDmxParams.Set();
+    const auto kTestPattern = common::FromValue<pixelpatterns::Pattern>(ConfigStore::Instance().DmxLedGet(&common::store::DmxLed::test_pattern));
 
-	WS28xxDmx pixelDmx;
+    PixelTestPattern pixeltest_pattern(kTestPattern, 1);
 
-	const auto nTestPattern = static_cast<pixelpatterns::Pattern>(pixelDmxParams.GetTestPattern());
-	PixelTestPattern pixelTestPattern(nTestPattern, 1);
+    common::firmware::pixeldmx::Show(7);
 
-	display.Printf(7, "%s:%d G%d", pixel::pixel_get_type(pixelDmxConfiguration.GetType()), pixelDmxConfiguration.GetCount(), pixelDmxConfiguration.GetGroupingCount());
+    oscserver.SetOutput(&pixeldmx);
+    oscserver.SetOscServerHandler(new Handler(&pixeldmx));
 
-	server.SetOutput(&pixelDmx);
-	server.SetOscServerHandler(new Handler(&pixelDmx));
-	
-	server.Print();
-	pixelDmx.Print();
+    oscserver.Print();
+    pixeldmx.Print();
 
-	for (auto i = 1; i < 7 ; i++) {
-		display.ClearLine(i);
-	}
+    uint8_t text_length;
 
-	uint8_t nHwTextLength;
+    display.Printf(1, "OSC Pixel 1");
+    display.Write(2, hal::BoardName(text_length));
+    display.Printf(3, "IP: " IPSTR " %c", IP2STR(network::GetPrimaryIp()), network::iface::IsDhcpKnown() ? (network::iface::Dhcp() ? 'D' : 'S') : ' ');
+    display.Printf(4, "In: %d", oscserver.GetPortIncoming());
+    display.Printf(5, "Out: %d", oscserver.GetPortOutgoing());
 
-	display.Printf(1, "OSC Pixel 1");
-	display.Write(2, hw.GetBoardName(nHwTextLength));
-	display.Printf(3, "IP: " IPSTR " %c", IP2STR(Network::Get()->GetIp()), nw.IsDhcpKnown() ? (nw.IsDhcpUsed() ? 'D' : 'S') : ' ');
-	display.Printf(4, "In: %d", server.GetPortIncoming());
-	display.Printf(5, "Out: %d", server.GetPortOutgoing());
+    RemoteConfig remote_config(remoteconfig::Output::PIXEL, 1);
 
-	RemoteConfig remoteConfig(remoteconfig::Node::OSC,  remoteconfig::Output::PIXEL, 1);
+    display.TextStatus(OscServerMsgConst::START, console::Colours::kConsoleYellow);
 
-	RemoteConfigParams remoteConfigParams;
-	remoteConfigParams.Load();
-	remoteConfigParams.Set(&remoteConfig);
+    oscserver.Start();
 
-	while (configStore.Flash())
-		;
+    display.TextStatus(OscServerMsgConst::STARTED, console::Colours::kConsoleGreen);
 
-	mDns.Print();
+    hal::WatchdogInit();
 
-	display.TextStatus(OscServerMsgConst::START, CONSOLE_YELLOW);
-
-	server.Start();
-
-	display.TextStatus(OscServerMsgConst::STARTED, CONSOLE_GREEN);
-
-	hw.WatchdogInit();
-
-	for (;;) {
-		hw.WatchdogFeed();
-		nw.Run();
-		server.Run();
-		remoteConfig.Run();
-		configStore.Flash();
-		pixelTestPattern.Run();
-		mDns.Run();
-#if defined (ENABLE_NTP_CLIENT)
-		ntpClient.Run();
-#endif
-		display.Run();
-		hw.Run();
-	}
+    for (;;)
+    {
+        hal::WatchdogFeed();
+        network::Run();
+        pixeltest_pattern.Run();
+        hal::Run();
+    }
 }

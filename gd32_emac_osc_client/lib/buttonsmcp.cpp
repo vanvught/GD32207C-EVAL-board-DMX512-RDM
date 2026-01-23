@@ -34,7 +34,7 @@
 
 #include "mcp23x17.h"
 
-#include "debug.h"
+#include "firmware/debug/debug_debug.h"
 
 namespace mcp23017 {
 static constexpr auto address = 0x20;
@@ -49,12 +49,12 @@ ButtonsMcp::ButtonsMcp(OscClient *pOscClient): m_I2C(mcp23017::address), m_pOscC
 }
 
 bool ButtonsMcp::Start() {
-	DEBUG_ENTRY
+	DEBUG_ENTRY();
 
-	m_bIsConnected = m_I2C.IsConnected();
+	is_connected_ = m_I2C.IsConnected();
 
-	if (!m_bIsConnected) {
-		DEBUG_EXIT
+	if (!is_connected_) {
+		DEBUG_EXIT();
 		return false;
 	}
 
@@ -69,23 +69,23 @@ bool ButtonsMcp::Start() {
 	m_I2C.WriteRegister(mcp23x17::REG_IODIRB, static_cast<uint8_t>(0x00));	// All output
 	m_I2C.WriteRegister(mcp23x17::REG_GPIOB, static_cast<uint8_t>(0x00));	// All led's Off
 
-	FUNC_PREFIX(gpio_fsel(gpio::interrupt, GPIO_FSEL_INPUT));
-	FUNC_PREFIX(gpio_set_pud(gpio::interrupt, GPIO_PULL_UP));
+	FUNC_PREFIX(GpioFsel(gpio::interrupt, GPIO_FSEL_INPUT));
+	FUNC_PREFIX(GpioSetPud(gpio::interrupt, GPIO_PULL_UP));
 
 	m_nButtonsCount = 8;
 
-	DEBUG_EXIT
+	DEBUG_EXIT();
 	return true;
 }
 
 void ButtonsMcp::Stop() {
-	DEBUG_ENTRY
+	DEBUG_ENTRY();
 
-	DEBUG_EXIT
+	DEBUG_EXIT();
 }
 
 void ButtonsMcp::Run() {
-	if (__builtin_expect(FUNC_PREFIX(gpio_lev(gpio::interrupt)) == LOW, 0)) {
+	if (__builtin_expect(FUNC_PREFIX(GpioLev(gpio::interrupt)) == 0, 0)) {
 
 		const auto nButtons = m_I2C.ReadRegister(mcp23x17::REG_GPIOA);
 		const uint8_t nButtonsChanged = (nButtons ^ m_nButtonsPrevious) & nButtons;

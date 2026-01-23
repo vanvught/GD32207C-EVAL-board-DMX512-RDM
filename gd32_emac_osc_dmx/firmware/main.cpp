@@ -2,7 +2,7 @@
  * @file main.cpp
  *
  */
-/* Copyright (C) 2022-2024 by Arjan van Vught mailto:info@gd32-dmx.org
+/* Copyright (C) 2022-2025 by Arjan van Vught mailto:info@gd32-dmx.org
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,123 +25,86 @@
 
 #include <cstdint>
 
-#include "hardware.h"
-#include "network.h"
-#include "networkconst.h"
-
-#include "net/apps/mdns.h"
-
-#if defined (ENABLE_NTP_CLIENT)
-# include "net/apps/ntpclient.h"
-#endif
-
+#include "gd32/hal.h"
+#include "gd32/hal_watchdog.h"
+#include "hal_boardinfo.h"
 #include "display.h"
-#include "displayhandler.h"
-
+#include "emac/network.h"
 #include "oscserver.h"
-#include "oscserverparams.h"
+#include "json/oscserverparams.h"
 #include "oscservermsgconst.h"
-
-#include "dmxparams.h"
+#include "json/dmxsendparams.h"
 #include "dmxsend.h"
-#include "dmxconfigudp.h"
-
 #include "remoteconfig.h"
-#include "remoteconfigparams.h"
-
 #include "configstore.h"
-
-
 #include "firmwareversion.h"
 #include "software_version.h"
 
-void Hardware::RebootHandler() {
-	Dmx::Get()->Blackout();
+namespace hal
+{
+void RebootHandler()
+{
+    Dmx::Get()->Blackout();
 }
+} // namespace hal
 
-int main() {
-	Hardware hw;
-	Display display;
-	ConfigStore configStore;
-	display.TextStatus(NetworkConst::MSG_NETWORK_INIT, CONSOLE_YELLOW);
-	Network nw;
-	MDNS mDns;
-	display.TextStatus(NetworkConst::MSG_NETWORK_STARTED, CONSOLE_GREEN);
-	FirmwareVersion fw(SOFTWARE_VERSION, __DATE__, __TIME__);
+int main() // NOLINT
+{
+    hal::Init();
+    Display display;
+    ConfigStore config_store;
+    network::Init();
+    FirmwareVersion fw(SOFTWARE_VERSION, __DATE__, __TIME__);
 
-	fw.Print("OSC Server DMX controller {1x Universe}");
-	
-	
-#if defined (ENABLE_NTP_CLIENT)
-	NtpClient ntpClient;
-	ntpClient.Start();
-	ntpClient.Print();
-#endif
+    fw.Print("OSC Server DMX controller {1x Universe}");
 
-	OSCServerParams params;
-	OscServer server;
+    OscServer osc_server;
 
-	params.Load();
-	params.Set(&server);
+    json::OscServerParams oscserver_params;
+    oscserver_params.Load();
+    oscserver_params.Set();
 
-	mDns.ServiceRecordAdd(nullptr, mdns::Services::OSC, "type=server", server.GetPortIncoming());
+    display.TextStatus(OscServerMsgConst::PARAMS, console::Colours::kConsoleYellow);
 
-	display.TextStatus(OscServerMsgConst::PARAMS, CONSOLE_YELLOW);
+    Dmx dmx;
 
-	Dmx dmx;
+    json::DmxSendParams dmxparams;
+    dmxparams.Load();
+    dmxparams.Set();
 
-	DmxParams dmxparams;
-	dmxparams.Load();
-	dmxparams.Set(&dmx);
+    DmxSend dmx_send;
+    dmx_send.Print();
 
-	DmxSend dmxSend;
-	dmxSend.Print();
+    osc_server.SetOutput(&dmx_send);
+    osc_server.Print();
 
-	server.SetOutput(&dmxSend);
-	server.Print();
+    for (uint8_t i = 1; i < 7; i++)
+    {
+        display.ClearLine(i);
+    }
 
-	for (uint8_t i = 1; i < 7 ; i++) {
-		display.ClearLine(i);
-	}
+    uint8_t text_length;
 
-	uint8_t nHwTextLength;
+    display.Printf(1, "OSC DMX 1");
+    display.Write(2, hal::BoardName(text_length));
+    display.Printf(3, "IP: " IPSTR " %c", IP2STR(network::GetPrimaryIp()), network::iface::IsDhcpKnown() ? (network::iface::Dhcp() ? 'D' : 'S') : ' ');
+    display.Printf(4, "In: %d", osc_server.GetPortIncoming());
+    display.Printf(5, "Out: %d", osc_server.GetPortOutgoing());
 
-	display.Printf(1, "OSC DMX 1");
-	display.Write(2, hw.GetBoardName(nHwTextLength));
-	display.Printf(3, "IP: " IPSTR " %c", IP2STR(Network::Get()->GetIp()), nw.IsDhcpKnown() ? (nw.IsDhcpUsed() ? 'D' : 'S') : ' ');
-	display.Printf(4, "In: %d", server.GetPortIncoming());
-	display.Printf(5, "Out: %d", server.GetPortOutgoing());
+    RemoteConfig remote_config(remoteconfig::Output::DMX, 1);
 
-	RemoteConfig remoteConfig(remoteconfig::Node::OSC, remoteconfig::Output::DMX, 1);
+    display.TextStatus(OscServerMsgConst::START, console::Colours::kConsoleYellow);
 
-	RemoteConfigParams remoteConfigParams;
-	remoteConfigParams.Load();
-	remoteConfigParams.Set(&remoteConfig);
+    osc_server.Start();
 
-	while (configStore.Flash())
-		;
+    display.TextStatus(OscServerMsgConst::STARTED, console::Colours::kConsoleGreen);
 
-	mDns.Print();
+    hal::WatchdogInit();
 
-	display.TextStatus(OscServerMsgConst::START, CONSOLE_YELLOW);
-
-	server.Start();
-
-	display.TextStatus(OscServerMsgConst::STARTED, CONSOLE_GREEN);
-
-	hw.WatchdogInit();
-
-	for (;;) {
-		hw.WatchdogFeed();
-		nw.Run();
-		server.Run();
-		remoteConfig.Run();
-		configStore.Flash();
-		mDns.Run();
-#if defined (ENABLE_NTP_CLIENT)
-		ntpClient.Run();
-#endif
-		display.Run();
-		hw.Run();
-	}
+    for (;;)
+    {
+        hal::WatchdogFeed();
+        network::Run();
+        hal::Run();
+    }
 }

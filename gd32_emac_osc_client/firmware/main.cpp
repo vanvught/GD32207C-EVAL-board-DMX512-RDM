@@ -2,7 +2,7 @@
  * @file main.cpp
  *
  */
-/* Copyright (C) 2019-2024 by Arjan van Vught mailto:info@gd32-dmx.org
+/* Copyright (C) 2019-2025 by Arjan van Vught mailto:info@gd32-dmx.org
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,135 +23,94 @@
  * THE SOFTWARE.
  */
 
-#include <cstdint>
 #include <cassert>
 
-#include "hardware.h"
-#include "network.h"
-#include "networkconst.h"
-
-
+#include "gd32/hal.h"
+#include "gd32/hal_watchdog.h"
 #include "display.h"
-
-#include "net/apps/mdns.h"
-
-#if defined (ENABLE_NTP_CLIENT)
-# include "net/apps/ntpclient.h"
-#endif
-
+#include "emac/network.h"
 #include "oscclient.h"
-#include "oscclientparams.h"
+#include "json/oscclientparams.h"
 #include "oscclientmsgconst.h"
-#include "oscclientled.h"
-
 #include "buttonsset.h"
 #include "buttonsgpio.h"
 #include "buttonsmcp.h"
-
 #include "configstore.h"
 #include "remoteconfig.h"
-#include "remoteconfigparams.h"
-
 #include "firmwareversion.h"
 #include "software_version.h"
-
 #include "displayhandler.h"
 
-void Hardware::RebootHandler() {}
+namespace hal
+{
+void RebootHandler() {}
+} // namespace hal
 
-int main() {
-	Hardware hw;
-	Display display;
-	ConfigStore configStore;
-	display.TextStatus(NetworkConst::MSG_NETWORK_INIT, CONSOLE_YELLOW);
-	Network nw;
-	MDNS mDns;
-	display.TextStatus(NetworkConst::MSG_NETWORK_STARTED, CONSOLE_GREEN);
-	FirmwareVersion fw(SOFTWARE_VERSION, __DATE__, __TIME__);
+int main() // NOLINT
+{
+    hal::Init();
+    Display display;
+    ConfigStore config_store;
+    network::Init();
+    FirmwareVersion fw(SOFTWARE_VERSION, __DATE__, __TIME__);
 
-	fw.Print();
-	
+    fw.Print();
 
-#if defined (ENABLE_NTP_CLIENT)
-	NtpClient ntpClient;
-	ntpClient.Start();
-	ntpClient.Print();
-#endif
+    OscClient osc_client;
 
-	OscClientParams params;
-	OscClient client;
+    json::OscClientParams osc_client_params;
+    osc_client_params.Load();
+    osc_client_params.Set();
 
-	params.Load();
-	params.Set(&client);
+    osc_client.Print();
 
-	mDns.ServiceRecordAdd(nullptr, mdns::Services::OSC, "type=client", client.GetPortIncoming());
+    ButtonsSet* buttons_set;
 
-	display.TextStatus(OscClientMsgConst::PARAMS, CONSOLE_YELLOW);
+    auto* buttons_mcp = new ButtonsMcp(&osc_client);
+    assert(buttons_mcp != nullptr);
 
-	client.Print();
+    if (buttons_mcp->Start())
+    {
+        buttons_set = static_cast<ButtonsSet*>(buttons_mcp);
+        osc_client.SetLedHandler(buttons_mcp);
+    }
+    else
+    {
+        delete buttons_mcp;
 
-	ButtonsSet *pButtonsSet;
+        auto* buttons_gpio = new ButtonsGpio(&osc_client);
+        assert(buttons_gpio != nullptr);
 
-	auto *pButtonsMcp = new ButtonsMcp(&client);
-	assert(pButtonsMcp != nullptr);
+        buttons_gpio->Start();
 
-	if (pButtonsMcp->Start()) {
-		pButtonsSet = static_cast<ButtonsSet*>(pButtonsMcp);
-		client.SetLedHandler(pButtonsMcp);
-	} else {
-		delete pButtonsMcp;
+        buttons_set = static_cast<ButtonsSet*>(buttons_gpio);
+        osc_client.SetLedHandler(buttons_gpio);
+    }
 
-		auto *pButtonsGpio = new ButtonsGpio(&client);
-		assert(pButtonsGpio != nullptr);
+    RemoteConfig remote_config( remoteconfig::Output::OSC, buttons_set->GetButtonsCount());
 
-		pButtonsGpio->Start();
 
-		pButtonsSet = static_cast<ButtonsSet*>(pButtonsGpio);
-		client.SetLedHandler(pButtonsGpio);
-	}
+    display.Write(1, "OSC Client");
+    display.Printf(2, "%s.local", network::iface::HostName());
+    display.Printf(3, "IP: " IPSTR " %c", IP2STR(network::GetPrimaryIp()), network::iface::IsDhcpKnown() ? (network::iface::Dhcp() ? 'D' : 'S') : ' ');
+    display.Printf(4, "S : " IPSTR, IP2STR(osc_client.GetServerIP()));
+    display.Printf(5, "O : %d", osc_client.GetPortOutgoing());
+    display.Printf(6, "I : %d", osc_client.GetPortIncoming());
 
-	RemoteConfig remoteConfig(remoteconfig::Node::OSC_CLIENT, remoteconfig::Output::OSC, pButtonsSet->GetButtonsCount());
+    display.TextStatus(OscClientMsgConst::START, console::Colours::kConsoleYellow);
 
-	RemoteConfigParams remoteConfigParams;
-	remoteConfigParams.Load();
-	remoteConfigParams.Set(&remoteConfig);
+    osc_client.Start();
 
-	while (configStore.Flash())
-		;
+    display.TextStatus(OscClientMsgConst::STARTED, console::Colours::kConsoleGreen);
 
-	for (auto i = 1; i < 7 ; i++) {
-		display.ClearLine(i);
-	}
+    hal::WatchdogInit();
 
-	display.Write(1, "OSC Client");
-	display.Printf(2, "%s.local", nw.GetHostName());
-	display.Printf(3, "IP: " IPSTR " %c", IP2STR(Network::Get()->GetIp()), nw.IsDhcpKnown() ? (nw.IsDhcpUsed() ? 'D' : 'S') : ' ');
-	display.Printf(4, "S : " IPSTR, IP2STR(client.GetServerIP()));
-	display.Printf(5, "O : %d", client.GetPortOutgoing());
-	display.Printf(6, "I : %d", client.GetPortIncoming());
-
-	mDns.Print();
-
-	display.TextStatus(OscClientMsgConst::START, CONSOLE_YELLOW);
-
-	client.Start();
-
-	display.TextStatus(OscClientMsgConst::STARTED, CONSOLE_GREEN);
-
-	hw.WatchdogInit();
-
-	for (;;) {
-		hw.WatchdogFeed();
-		nw.Run();
-		client.Run();
-		pButtonsSet->Run();
-		remoteConfig.Run();
-		configStore.Flash();
-		mDns.Run();
-#if defined (ENABLE_NTP_CLIENT)
-		ntpClient.Run();
-#endif
-		hw.Run();
-		display.Run();
-	}
+    for (;;)
+    {
+        hal::WatchdogFeed();
+        network::Run();
+        osc_client.Run();
+        buttons_set->Run();
+        hal::Run();
+    }
 }

@@ -1,8 +1,7 @@
 /**
  * @file buttonsgpio.cpp
- *
  */
-/* Copyright (C) 2019-2022 by Arjan van Vught mailto:info@gd32-dmx.org
+/* Copyright (C) 2019-2025 by Arjan van Vught mailto:info@gd32-dmx.org
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -32,10 +31,9 @@
 #include "buttonsgpio.h"
 #include "oscclient.h"
 
-#include "hardware.h"
 #include "hal_gpio.h"
 
-#include "debug.h"
+#include "firmware/debug/debug_debug.h"
 
 #define BUTTON0_GPIO		GPIO_EXT_13
 #define BUTTON1_GPIO		GPIO_EXT_11
@@ -63,26 +61,26 @@ ButtonsGpio::ButtonsGpio(OscClient *pOscClient) : m_pOscClient(pOscClient) {
 
 bool ButtonsGpio::Start() {
 	__DMB();
-	FUNC_PREFIX(gpio_fsel(LED0_GPIO, GPIO_FSEL_OUTPUT));
+	FUNC_PREFIX(GpioFsel(LED0_GPIO, GPIO_FSEL_OUTPUT));
 	__DSB();
-	FUNC_PREFIX(gpio_fsel(LED1_GPIO, GPIO_FSEL_OUTPUT));
-	FUNC_PREFIX(gpio_fsel(LED2_GPIO, GPIO_FSEL_OUTPUT));
-	FUNC_PREFIX(gpio_fsel(LED3_GPIO, GPIO_FSEL_OUTPUT));
+	FUNC_PREFIX(GpioFsel(LED1_GPIO, GPIO_FSEL_OUTPUT));
+	FUNC_PREFIX(GpioFsel(LED2_GPIO, GPIO_FSEL_OUTPUT));
+	FUNC_PREFIX(GpioFsel(LED3_GPIO, GPIO_FSEL_OUTPUT));
 
-//	FUNC_PREFIX(gpio_fsel(BUTTON0_GPIO, GPIO_FSEL_EINT));
-//	FUNC_PREFIX(gpio_fsel(BUTTON1_GPIO, GPIO_FSEL_EINT));
-//	FUNC_PREFIX(gpio_fsel(BUTTON2_GPIO, GPIO_FSEL_EINT));
-//	FUNC_PREFIX(gpio_fsel(BUTTON3_GPIO, GPIO_FSEL_EINT));
+//	FUNC_PREFIX(GpioFsel(BUTTON0_GPIO, GPIO_FSEL_EINT));
+//	FUNC_PREFIX(GpioFsel(BUTTON1_GPIO, GPIO_FSEL_EINT));
+//	FUNC_PREFIX(GpioFsel(BUTTON2_GPIO, GPIO_FSEL_EINT));
+//	FUNC_PREFIX(GpioFsel(BUTTON3_GPIO, GPIO_FSEL_EINT));
 
-	FUNC_PREFIX(gpio_set_pud(BUTTON0_GPIO, GPIO_PULL_UP));
-	FUNC_PREFIX(gpio_set_pud(BUTTON1_GPIO, GPIO_PULL_UP));
-	FUNC_PREFIX(gpio_set_pud(BUTTON2_GPIO, GPIO_PULL_UP));
-	FUNC_PREFIX(gpio_set_pud(BUTTON3_GPIO, GPIO_PULL_UP));
+	FUNC_PREFIX(GpioSetPud(BUTTON0_GPIO, GPIO_PULL_UP));
+	FUNC_PREFIX(GpioSetPud(BUTTON1_GPIO, GPIO_PULL_UP));
+	FUNC_PREFIX(GpioSetPud(BUTTON2_GPIO, GPIO_PULL_UP));
+	FUNC_PREFIX(GpioSetPud(BUTTON3_GPIO, GPIO_PULL_UP));
 
-	FUNC_PREFIX(gpio_int_cfg(BUTTON0_GPIO, GPIO_INT_CFG_NEG_EDGE));
-	FUNC_PREFIX(gpio_int_cfg(BUTTON1_GPIO, GPIO_INT_CFG_NEG_EDGE));
-	FUNC_PREFIX(gpio_int_cfg(BUTTON2_GPIO, GPIO_INT_CFG_NEG_EDGE));
-	FUNC_PREFIX(gpio_int_cfg(BUTTON3_GPIO, GPIO_INT_CFG_NEG_EDGE));
+	FUNC_PREFIX(GpioIntCfg(BUTTON0_GPIO, GPIO_INT_CFG_NEG_EDGE));
+	FUNC_PREFIX(GpioIntCfg(BUTTON1_GPIO, GPIO_INT_CFG_NEG_EDGE));
+	FUNC_PREFIX(GpioIntCfg(BUTTON2_GPIO, GPIO_INT_CFG_NEG_EDGE));
+	FUNC_PREFIX(GpioIntCfg(BUTTON3_GPIO, GPIO_INT_CFG_NEG_EDGE));
 
 	m_nButtonsCount = 4;
 
@@ -130,16 +128,16 @@ void ButtonsGpio::SetLed(const uint32_t nLed, const bool bOn) {
 
 	switch (nLed) {
 	case 0:
-		bOn ? FUNC_PREFIX(gpio_set(LED0_GPIO)) : FUNC_PREFIX(gpio_clr(LED0_GPIO));
+		bOn ? FUNC_PREFIX(GpioSet(LED0_GPIO)) : FUNC_PREFIX(GpioClr(LED0_GPIO));
 		break;
 	case 1:
-		bOn ? FUNC_PREFIX(gpio_set(LED1_GPIO)) : FUNC_PREFIX(gpio_clr(LED1_GPIO));
+		bOn ? FUNC_PREFIX(GpioSet(LED1_GPIO)) : FUNC_PREFIX(GpioClr(LED1_GPIO));
 		break;
 	case 2:
-		bOn ? FUNC_PREFIX(gpio_set(LED2_GPIO)) : FUNC_PREFIX(gpio_clr(LED2_GPIO));
+		bOn ? FUNC_PREFIX(GpioSet(LED2_GPIO)) : FUNC_PREFIX(GpioClr(LED2_GPIO));
 		break;
 	case 3:
-		bOn ? FUNC_PREFIX(gpio_set(LED3_GPIO)) : FUNC_PREFIX(gpio_clr(LED3_GPIO));
+		bOn ? FUNC_PREFIX(GpioSet(LED3_GPIO)) : FUNC_PREFIX(GpioClr(LED3_GPIO));
 		break;
 	default:
 		break;

@@ -15,4 +15,5 @@ SRCDIR=firmware lib device
 
 include ../firmware-template-gd32/Rules.mk
 
+
 prerequisites:

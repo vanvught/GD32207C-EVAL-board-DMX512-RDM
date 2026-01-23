@@ -50,7 +50,7 @@ public:
 private:
 	HAL_I2C m_I2C;
 	OscClient *m_pOscClient;
-	bool m_bIsConnected { false };
+	bool is_connected_ { false };
 	uint8_t m_nButtonsPrevious { 0 };
 	uint8_t m_nPortB { 0 };
 };

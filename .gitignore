@@ -64,3 +64,4 @@ gd32f4xx*.*
 lib-gd32/gd32f4xx/*
 
 *.map
+/common/scripts/gd32/venv

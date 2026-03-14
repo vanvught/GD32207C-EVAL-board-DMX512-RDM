@@ -1,12 +1,4 @@
 #!/bin/bash
-NPROC=1
-
-if [ "$(uname)" == "Darwin" ]; then
-     NPROC=$(sysctl -a | grep machdep.cpu.core_count | cut -d ':' -f 2)     
-elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
-     NPROC=$(nproc)
-fi
-
 cd ..
 
 DIR=gd32_*
@@ -17,8 +9,8 @@ do
 	if [ -d $f ]; then
 		cd "$f"
 		
-		make -f Makefile.GD32 clean
-		make -f Makefile.GD32 -j $NPROC
+		make -f Makefile.GD32 -j clean
+		make -f Makefile.GD32 
 		retVal=$?
 		if [ $retVal -ne 0 ]; then
 		 	echo "Error : " "$f"

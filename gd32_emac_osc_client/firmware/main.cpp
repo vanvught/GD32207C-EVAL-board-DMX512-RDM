@@ -2,7 +2,7 @@
  * @file main.cpp
  *
  */
-/* Copyright (C) 2019-2025 by Arjan van Vught mailto:info@gd32-dmx.org
+/* Copyright (C) 2019-2026 by Arjan van Vught mailto:info@gd32-dmx.org
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,7 +26,7 @@
 #include <cassert>
 
 #include "gd32/hal.h"
-#include "gd32/hal_watchdog.h"
+#include "watchdog.h"
 #include "display.h"
 #include "emac/network.h"
 #include "oscclient.h"
@@ -41,8 +41,7 @@
 #include "software_version.h"
 #include "displayhandler.h"
 
-namespace hal
-{
+namespace hal {
 void RebootHandler() {}
 } // namespace hal
 
@@ -69,13 +68,10 @@ int main() // NOLINT
     auto* buttons_mcp = new ButtonsMcp(&osc_client);
     assert(buttons_mcp != nullptr);
 
-    if (buttons_mcp->Start())
-    {
+    if (buttons_mcp->Start()) {
         buttons_set = static_cast<ButtonsSet*>(buttons_mcp);
         osc_client.SetLedHandler(buttons_mcp);
-    }
-    else
-    {
+    } else {
         delete buttons_mcp;
 
         auto* buttons_gpio = new ButtonsGpio(&osc_client);
@@ -87,8 +83,7 @@ int main() // NOLINT
         osc_client.SetLedHandler(buttons_gpio);
     }
 
-    RemoteConfig remote_config( remoteconfig::Output::OSC, buttons_set->GetButtonsCount());
-
+    RemoteConfig remote_config(remoteconfig::Output::OSC, buttons_set->GetButtonsCount());
 
     display.Write(1, "OSC Client");
     display.Printf(2, "%s.local", network::iface::HostName());
@@ -97,17 +92,16 @@ int main() // NOLINT
     display.Printf(5, "O : %d", osc_client.GetPortOutgoing());
     display.Printf(6, "I : %d", osc_client.GetPortIncoming());
 
-    display.TextStatus(OscClientMsgConst::START, console::Colours::kConsoleYellow);
+    display.TextStatus(OscClientMsgConst::kStart, ansi::Colours::Colour::kYellow);
 
     osc_client.Start();
 
-    display.TextStatus(OscClientMsgConst::STARTED, console::Colours::kConsoleGreen);
+    display.TextStatus(OscClientMsgConst::kStarted, ansi::Colours::Colour::kGreen);
 
-    hal::WatchdogInit();
+    watchdog::Init();
 
-    for (;;)
-    {
-        hal::WatchdogFeed();
+    for (;;) {
+        watchdog::Feed();
         network::Run();
         osc_client.Run();
         buttons_set->Run();

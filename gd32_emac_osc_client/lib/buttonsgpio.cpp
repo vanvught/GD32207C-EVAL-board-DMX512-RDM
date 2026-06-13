@@ -43,8 +43,8 @@
 #define BUTTON2_EXTI GD32_GPIO_TO_NUMBER(BUTTON2_GPIO)
 #define BUTTON3_EXTI GD32_GPIO_TO_NUMBER(BUTTON3_GPIO)
 
-#define BUTTON(x) ((m_nButtons >> GD32_GPIO_TO_NUMBER(x)) & 0x01)
-#define BUTTON_STATE(x) ((m_nButtons & (1U << GD32_GPIO_TO_NUMBER(x))) == (1U << GD32_GPIO_TO_NUMBER(x)))
+#define BUTTON(x) ((buttons_ >> GD32_GPIO_TO_NUMBER(x)) & 0x01)
+#define BUTTON_STATE(x) ((buttons_ & (1U << GD32_GPIO_TO_NUMBER(x))) == (1U << GD32_GPIO_TO_NUMBER(x)))
 
 #define INT_MASK ((1U << BUTTON0_EXTI) | (1U << BUTTON1_EXTI) | (1U << BUTTON2_EXTI) | (1U << BUTTON3_EXTI))
 
@@ -80,7 +80,7 @@ bool ButtonsGpio::Start() {
     FUNC_PREFIX(GpioIntCfg(BUTTON2_GPIO, GPIO_INT_CFG_NEG_EDGE));
     FUNC_PREFIX(GpioIntCfg(BUTTON3_GPIO, GPIO_INT_CFG_NEG_EDGE));
 
-    m_nButtonsCount = 4;
+    buttons_count_ = 4;
 
     EXTI_PD = INT_MASK;
 
@@ -90,9 +90,9 @@ bool ButtonsGpio::Start() {
 void ButtonsGpio::Stop() {}
 
 void ButtonsGpio::Run() {
-    m_nButtons = EXTI_PD & INT_MASK;
+    buttons_ = EXTI_PD & INT_MASK;
 
-    if (__builtin_expect((m_nButtons != 0), 0)) {
+    if (__builtin_expect((buttons_ != 0), 0)) {
         EXTI_PD = INT_MASK;
 
         DEBUG_PRINTF("%d-%d-%d-%d", BUTTON(BUTTON0_GPIO), BUTTON(BUTTON1_GPIO), BUTTON(BUTTON2_GPIO), BUTTON(BUTTON3_GPIO));

@@ -2,7 +2,7 @@
  * @file buttonsset.h
  *
  */
-/* Copyright (C) 2019-2025 by Arjan van Vught mailto:info@gd32-dmx.org
+/* Copyright (C) 2019-2026 by Arjan van Vught mailto:info@gd32-dmx.org
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,8 +28,7 @@
 
 #include <stdint.h>
 
-class ButtonsSet
-{
+class ButtonsSet {
    public:
     ButtonsSet() = default;
     virtual ~ButtonsSet() = default;
@@ -44,4 +43,4 @@ class ButtonsSet
     uint32_t buttons_count_{0};
 };
 
-#endif  // BUTTONSSET_H_
+#endif // BUTTONSSET_H_

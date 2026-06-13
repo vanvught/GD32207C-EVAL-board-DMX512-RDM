@@ -83,7 +83,7 @@ void ButtonsMcp::Stop() {
 }
 
 void ButtonsMcp::Run() {
-    if (__builtin_expect(FUNC_PREFIX(GpioLev(gpio::kInterrupt)) == LOW, 0)) {
+    if (__builtin_expect(FUNC_PREFIX(GpioLev(gpio::kInterrupt)) == 0, 0)) {
         const auto buttons = i2c_.ReadRegister(mcp23x17::REG_GPIOA, true);
         const uint8_t buttons_changed = (buttons ^ buttons_previous_) & buttons;
 

@@ -2,7 +2,7 @@
  * @file buttonsmcp.h
  *
  */
-/* Copyright (C) 2019-2022 by Arjan van Vught mailto:info@gd32-dmx.org
+/* Copyright (C) 2019-2026 by Arjan van Vught mailto:info@gd32-dmx.org
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,32 +27,29 @@
 #define BUTTONSMCP_H_
 
 #include <stdint.h>
-#include <stdbool.h>
 
 #include "buttonsset.h"
 #include "oscclientled.h"
-
 #include "oscclient.h"
+#include "i2c.h"
 
-#include "hal_i2c.h"
+class ButtonsMcp final: public ButtonsSet, public OscClientLed
+{
+   public:
+    explicit ButtonsMcp(OscClient* oscclient);
 
-class ButtonsMcp: public ButtonsSet, public OscClientLed {
-public:
-	ButtonsMcp(OscClient *pOscClient);
+    bool Start() override;
+    void Stop() override;
+    void Run() override;
 
-	bool Start() override;
-	void Stop() override;
+    void SetLed(uint32_t led, bool on) override;
 
-	void Run() override;
-
-	void SetLed(const uint32_t nLed, const bool bOn) override;
-
-private:
-	HAL_I2C m_I2C;
-	OscClient *m_pOscClient;
-	bool is_connected_ { false };
-	uint8_t m_nButtonsPrevious { 0 };
-	uint8_t m_nPortB { 0 };
+   private:
+    I2c i2c_;
+    OscClient* oscclient_;
+    bool is_connected_{false};
+    uint8_t buttons_previous_{0};
+    uint8_t port_b_{0};
 };
 
-#endif /* BUTTONSMCP_H_ */
+#endif  // BUTTONSMCP_H_

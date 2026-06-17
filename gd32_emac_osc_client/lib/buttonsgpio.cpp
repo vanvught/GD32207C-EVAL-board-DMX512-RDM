@@ -30,7 +30,7 @@
 
 #include "buttonsgpio.h"
 #include "oscclient.h"
-#include "hal_gpio.h"
+#include "gpio.h"
 #include "firmware/debug/debug_debug.h"
 
 #define BUTTON0_GPIO GPIO_EXT_13
@@ -59,26 +59,21 @@ ButtonsGpio::ButtonsGpio(OscClient* pOscClient) : oscclient_(pOscClient) {
 
 bool ButtonsGpio::Start() {
     __DMB();
-    FUNC_PREFIX(GpioFsel(LED0_GPIO, GPIO_FSEL_OUTPUT));
+    gpio::Fsel(LED0_GPIO, gpio::Select::kOutput);
     __DSB();
-    FUNC_PREFIX(GpioFsel(LED1_GPIO, GPIO_FSEL_OUTPUT));
-    FUNC_PREFIX(GpioFsel(LED2_GPIO, GPIO_FSEL_OUTPUT));
-    FUNC_PREFIX(GpioFsel(LED3_GPIO, GPIO_FSEL_OUTPUT));
+    gpio::Fsel(LED1_GPIO, gpio::Select::kOutput);
+    gpio::Fsel(LED2_GPIO, gpio::Select::kOutput);
+    gpio::Fsel(LED3_GPIO, gpio::Select::kOutput);
 
-    //	FUNC_PREFIX(GpioFsel(BUTTON0_GPIO, GPIO_FSEL_EINT));
-    //	FUNC_PREFIX(GpioFsel(BUTTON1_GPIO, GPIO_FSEL_EINT));
-    //	FUNC_PREFIX(GpioFsel(BUTTON2_GPIO, GPIO_FSEL_EINT));
-    //	FUNC_PREFIX(GpioFsel(BUTTON3_GPIO, GPIO_FSEL_EINT));
+    gpio::SetPud(BUTTON0_GPIO, gpio::Pull::kUp);
+    gpio::SetPud(BUTTON1_GPIO, gpio::Pull::kUp);
+    gpio::SetPud(BUTTON2_GPIO, gpio::Pull::kUp);
+    gpio::SetPud(BUTTON3_GPIO, gpio::Pull::kUp);
 
-    FUNC_PREFIX(GpioSetPud(BUTTON0_GPIO, GPIO_PULL_UP));
-    FUNC_PREFIX(GpioSetPud(BUTTON1_GPIO, GPIO_PULL_UP));
-    FUNC_PREFIX(GpioSetPud(BUTTON2_GPIO, GPIO_PULL_UP));
-    FUNC_PREFIX(GpioSetPud(BUTTON3_GPIO, GPIO_PULL_UP));
-
-    FUNC_PREFIX(GpioIntCfg(BUTTON0_GPIO, GPIO_INT_CFG_NEG_EDGE));
-    FUNC_PREFIX(GpioIntCfg(BUTTON1_GPIO, GPIO_INT_CFG_NEG_EDGE));
-    FUNC_PREFIX(GpioIntCfg(BUTTON2_GPIO, GPIO_INT_CFG_NEG_EDGE));
-    FUNC_PREFIX(GpioIntCfg(BUTTON3_GPIO, GPIO_INT_CFG_NEG_EDGE));
+    Gd32GpioIntCfg(BUTTON0_GPIO, GPIO_INT_CFG_NEG_EDGE);
+    Gd32GpioIntCfg(BUTTON1_GPIO, GPIO_INT_CFG_NEG_EDGE);
+    Gd32GpioIntCfg(BUTTON2_GPIO, GPIO_INT_CFG_NEG_EDGE);
+    Gd32GpioIntCfg(BUTTON3_GPIO, GPIO_INT_CFG_NEG_EDGE);
 
     buttons_count_ = 4;
 
@@ -124,16 +119,16 @@ void ButtonsGpio::SetLed(uint32_t nLed, bool bOn) {
 
     switch (nLed) {
         case 0:
-            bOn ? FUNC_PREFIX(GpioSet(LED0_GPIO)) : FUNC_PREFIX(GpioClr(LED0_GPIO));
+            bOn ? gpio::Set(LED0_GPIO) : gpio::Clr(LED0_GPIO);
             break;
         case 1:
-            bOn ? FUNC_PREFIX(GpioSet(LED1_GPIO)) : FUNC_PREFIX(GpioClr(LED1_GPIO));
+            bOn ? gpio::Set(LED1_GPIO) : gpio::Clr(LED1_GPIO);
             break;
         case 2:
-            bOn ? FUNC_PREFIX(GpioSet(LED2_GPIO)) : FUNC_PREFIX(GpioClr(LED2_GPIO));
+            bOn ? gpio::Set(LED2_GPIO) : gpio::Clr(LED2_GPIO);
             break;
         case 3:
-            bOn ? FUNC_PREFIX(GpioSet(LED3_GPIO)) : FUNC_PREFIX(GpioClr(LED3_GPIO));
+            bOn ? gpio::Set(LED3_GPIO) : gpio::Clr(LED3_GPIO);
             break;
         default:
             break;

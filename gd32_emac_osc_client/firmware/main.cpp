@@ -25,7 +25,7 @@
 
 #include <cassert>
 
-#include "gd32/hal.h"
+#include "board.h"
 #include "watchdog.h"
 #include "display.h"
 #include "emac/network.h"
@@ -37,17 +37,17 @@
 #include "buttonsmcp.h"
 #include "configstore.h"
 #include "remoteconfig.h"
-#include "firmwareversion.h"
+#include "firmware/firmwareversion.h"
 #include "software_version.h"
 #include "displayhandler.h"
 
-namespace hal {
+namespace board {
 void RebootHandler() {}
-} // namespace hal
+} // namespace board
 
 int main() // NOLINT
 {
-    hal::Init();
+    board::Init();
     Display display;
     ConfigStore config_store;
     network::Init();
@@ -105,6 +105,6 @@ int main() // NOLINT
         network::Run();
         osc_client.Run();
         buttons_set->Run();
-        hal::Run();
+        board::Run();
     }
 }

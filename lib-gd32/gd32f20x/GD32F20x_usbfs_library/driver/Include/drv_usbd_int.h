@@ -2,11 +2,11 @@
     \file    drv_usbd_int.h
     \brief   USB device mode interrupt header file
 
-    \version 2023-06-30, V2.5.0, firmware for GD32F20x
+    \version 2026-02-06, V3.0.0, firmware for GD32F20x
 */
 
 /*
-    Copyright (c) 2023, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -32,14 +32,13 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
 OF SUCH DAMAGE.
 */
 
-#ifndef __DRV_USBD_INT_H
-#define __DRV_USBD_INT_H
+#ifndef DRV_USBD_INT_H
+#define DRV_USBD_INT_H
 
-#include "drv_usb_core.h"
 #include "drv_usb_dev.h"
 
 /* function declarations */
 /* USB device-mode interrupts global service routine handler */
-void usbd_isr (usb_core_driver *udev);
+void usbd_isr(usb_core_driver *udev);
 
-#endif /* __DRV_USBD_INT_H */
+#endif /* DRV_USBD_INT_H */

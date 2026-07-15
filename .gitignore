@@ -65,3 +65,4 @@ lib-gd32/gd32f4xx/*
 
 *.map
 /common/scripts/gd32/venv
+lib-remoteconfig/http/content/light/pixeltype.json

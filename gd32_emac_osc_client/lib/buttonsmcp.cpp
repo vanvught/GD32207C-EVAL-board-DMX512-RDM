@@ -112,7 +112,7 @@ void ButtonsMcp::Run() {
 }
 
 void ButtonsMcp::SetLed(uint32_t led, bool on) {
-    DEBUG_PRINTF("led%d %s", led, on ? "On" : "Off");
+    DEBUG_PRINTF("led%u %s", static_cast<unsigned>(led), on ? "On" : "Off");
 
     port_b_ &= static_cast<uint8_t>(~(1U << led));
 
@@ -122,5 +122,5 @@ void ButtonsMcp::SetLed(uint32_t led, bool on) {
 
     i2c_.WriteRegister(mcp23x17::REG_GPIOB, port_b_, true);
 
-    DEBUG_PRINTF("%.2x", port_b_);
+    DEBUG_PRINTF("%.2x", static_cast<unsigned>(port_b_));
 }

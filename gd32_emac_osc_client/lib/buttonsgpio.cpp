@@ -90,7 +90,11 @@ void ButtonsGpio::Run() {
     if (__builtin_expect((buttons_ != 0), 0)) {
         EXTI_PD = INT_MASK;
 
-        DEBUG_PRINTF("%d-%d-%d-%d", BUTTON(BUTTON0_GPIO), BUTTON(BUTTON1_GPIO), BUTTON(BUTTON2_GPIO), BUTTON(BUTTON3_GPIO));
+        DEBUG_PRINTF("%u-%u-%u-%u", 
+          static_cast<unsigned>(BUTTON(BUTTON0_GPIO)), 
+          static_cast<unsigned>(BUTTON(BUTTON1_GPIO)), 
+          static_cast<unsigned>(BUTTON(BUTTON2_GPIO)), 
+          static_cast<unsigned>(BUTTON(BUTTON3_GPIO)));
 
         if (BUTTON_STATE(BUTTON0_GPIO)) {
             oscclient_->SendCmd(0);
@@ -115,7 +119,7 @@ void ButtonsGpio::Run() {
 }
 
 void ButtonsGpio::SetLed(uint32_t nLed, bool bOn) {
-    DEBUG_PRINTF("led%d %s", nLed, bOn ? "On" : "Off");
+    DEBUG_PRINTF("led%u %s", static_cast<unsigned>(nLed), bOn ? "On" : "Off");
 
     switch (nLed) {
         case 0:

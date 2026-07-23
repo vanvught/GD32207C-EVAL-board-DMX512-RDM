@@ -41,7 +41,7 @@ Zerobss:
   ldr r3, = _ebss
   cmp r2, r3
   bcc FillZerobss
-#if defined (DEBUG_STACK)
+#if defined (CONFIG_DEBUG_STACK)
   bl stack_debug_init
 #endif
   bl  SystemInit

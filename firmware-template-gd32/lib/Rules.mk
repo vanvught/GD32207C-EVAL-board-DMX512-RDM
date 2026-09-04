@@ -20,7 +20,7 @@ $(info $$ENET_PHY [${ENET_PHY}])
 SRCDIR=src src/gd32 $(EXTRA_SRCDIR)
 
 DEFINES:=$(addprefix -D,$(DEFINES))
-DEFINES+=-D_TIME_STAMP_YEAR_=$(shell date  +"%Y") -D_TIME_STAMP_MONTH_=$(shell date  +"%-m") -D_TIME_STAMP_DAY_=$(shell date  +"%-d")
+DEFINES+=-DPHY_TYPE=$(ENET_PHY)
 
 include ../common/make/gd32/Board.mk
 include ../common/make/gd32/Mcu.mk

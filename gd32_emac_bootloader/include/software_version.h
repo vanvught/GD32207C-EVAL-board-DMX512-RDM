@@ -1,8 +1,8 @@
 /**
- * @file ntpclient.cpp
+ * @file software_version.h
  *
  */
-/* Copyright (C) 2021-2026 by Arjan van Vught mailto:info@gd32-dmx.org
+/* Copyright (C) 2022-2026 by Arjan van Vught mailto:info@gd32-dmx.org
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,26 +23,9 @@
  * THE SOFTWARE.
  */
 
-#include "core/protocol/ntp.h"
-#include "display.h" // IWYU pragma: keep
+#ifndef SOFTWARE_VERSION_H_
+#define SOFTWARE_VERSION_H_
 
-namespace network::apps::ntpclient {
-void DisplayStatus(::ntp::Status status) {
-    switch (status) {
-        case ::ntp::Status::kStopped:
-            Display::Get()->TextStatus("No NTP Client");
-            break;
-        case ::ntp::Status::kIdle:
-            Display::Get()->TextStatus("NTP Client");
-            break;
-        case ::ntp::Status::kLocked:
-            Display::Get()->TextStatus("NTP Client LOCKED");
-            break;
-        case ::ntp::Status::kFailed:
-            Display::Get()->TextStatus("Error: NTP");
-            break;
-        default:
-            break;
-    }
-}
-} // namespace network::apps::ntpclient
+constexpr char kSoftwareVersion[] = "2.4";
+
+#endif // SOFTWARE_VERSION_H_

@@ -1,8 +1,8 @@
 /**
- * @file jsongetrconfig.cpp
+ * @file remoteconfig.cpp
  *
  */
-/* Copyright (C) 2025 by Arjan van Vught mailto:info@gd32-dmx.org
+/* Copyright (C) 2022 by Arjan van Vught mailto:info@orangepi-dmx.nl
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,32 +23,17 @@
  * THE SOFTWARE.
  */
 
-#include <cstdint>
-#include <cassert>
-
 #include "remoteconfig.h"
-#include "remoteconfigconst.h"
+ #include "firmware/debug/debug_debug.h"
 
-#include "json.h"
+void RemoteConfig::PlatformHandleTftpSet() {
+	DEBUG_ENTRY();
 
-void JsonGetRconfig(void* buffer, uint32_t buffer_length, uint32_t& size)
-{
-    assert(pBuffer != nullptr);
-    assert(nBufferLength != 0);
+	DEBUG_EXIT();
+}
 
-    JsonDocument doc;
-    JsonObject rconfig_txt = doc[RemoteConfigConst::PARAMS_FILE_NAME].to<JsonObject>();
+void RemoteConfig::PlatformHandleTftpGet() {
+	DEBUG_ENTRY();
 
-    auto* r = RemoteConfig::Get();
-
-    rconfig_txt[RemoteConfigConst::PARAMS_DISABLE] = r->GetDisable() ? 1 : 0;
-    rconfig_txt[RemoteConfigConst::PARAMS_DISABLE_WRITE] = r->GetDisableWrite() ? 1 : 0;
-    rconfig_txt[RemoteConfigConst::PARAMS_ENABLE_REBOOT] = r->IsEnableReboot() ? 1 : 0;
-    rconfig_txt[RemoteConfigConst::PARAMS_ENABLE_UPTIME] = r->IsEnableUptime() ? 1 : 0;
-    rconfig_txt[RemoteConfigConst::PARAMS_ENABLE_FACTORY] = r->GetEnableFactory() ? 1 : 0;
-    rconfig_txt[RemoteConfigConst::PARAMS_DISPLAY_NAME] = r->GetDisplayName();
-
-    doc.shrinkToFit();
-
-    size = serializeJson(doc, buffer, buffer_length);
+	DEBUG_EXIT();
 }

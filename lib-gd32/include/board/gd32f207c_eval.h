@@ -28,13 +28,13 @@
 
 #include <stdint.h>
 
-#if !defined(BOARD_GD32F207C_EVAL)
+#ifndef BOARD_GD32F207C_EVAL
 # error This file should not be included
 #endif // BOARD_GD32F207C_EVAL
 
-#if defined (MCU_GD32F20X_MCU_H_)
+#ifdef MCU_GD32F20X_MCU_H_
 # error This file should be included later
-#endif // defined (MCU_GD32F20X_MCU_H_)
+#endif // MCU_GD32F20X_MCU_H_
 
 /**
  * LEDs
@@ -250,7 +250,7 @@ static constexpr uint32_t kPortATx = 0;
 #define SPI_LCD_RST_PIN		GD32_PORT_TO_GPIO(GD32_GPIO_PORTA, 6)
 #define SPI_LCD_DC_GPIO		GD32_PORT_TO_GPIO(GD32_GPIO_PORTA, 14)
 #define SPI_LCD_BL_GPIO		GD32_PORT_TO_GPIO(GD32_GPIO_PORTA, 11)
-#if defined(SPI_LCD_HAVE_CS_GPIO)
+#ifdef SPI_LCD_HAVE_CS_GPIO
 # define SPI_LCD_CS_GPIO	GD32_PORT_TO_GPIO(GD32_GPIO_PORTA, 15)
 #endif // SPI_LCD_HAVE_CS_GPIO
 

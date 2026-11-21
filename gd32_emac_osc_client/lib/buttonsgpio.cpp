@@ -24,7 +24,7 @@
 
 #ifndef NDEBUG
 #include <cstdio>
-#endif
+#endif // NDEBUG
 #include <cstdint>
 #include <cassert>
 
